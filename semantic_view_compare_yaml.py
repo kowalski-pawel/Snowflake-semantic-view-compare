@@ -383,28 +383,14 @@ if st.session_state.get("compared"):
     with col_schema:
         target_schema = st.text_input("Target schema (DB.SCHEMA)", value="PKOWALSKI5.PUBLIC")
 
-    col_gen, col_deploy = st.columns(2)
-
-    with col_gen:
-        if st.button("Generate YAML", type="primary"):
-            merged_yaml = generate_merged_yaml(
-                new_view_name, selections,
-                left_objects, right_objects,
-                left_yaml, right_yaml
-            )
-            st.session_state.generated_yaml = merged_yaml
+    if st.button("Generate YAML", type="primary"):
+        merged_yaml = generate_merged_yaml(
+            new_view_name, selections,
+            left_objects, right_objects,
+            left_yaml, right_yaml
+        )
+        st.session_state.generated_yaml = merged_yaml
 
     if st.session_state.get("generated_yaml"):
+        st.subheader("Generated YAML")
         st.code(st.session_state.generated_yaml, language="yaml")
-
-        with col_deploy:
-            or_replace = st.checkbox("OR REPLACE (overwrite if exists)", value=True)
-            if st.button("Deploy to Snowflake"):
-                try:
-                    yaml_escaped = st.session_state.generated_yaml.replace("'", "''")
-                    or_replace_str = "TRUE" if or_replace else "FALSE"
-                    sql = f"CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('{yaml_escaped}', '{target_schema}', {or_replace_str})"
-                    session.sql(sql).collect()
-                    st.success(f"Semantic View '{new_view_name}' created in {target_schema}!")
-                except Exception as e:
-                    st.error(f"Deploy error: {e}")
